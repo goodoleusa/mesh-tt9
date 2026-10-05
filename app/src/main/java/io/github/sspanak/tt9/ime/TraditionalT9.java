@@ -31,6 +31,7 @@ public class TraditionalT9 extends PremiumHandler {
 	@NonNull private final Handler backgroundTasks = new Handler(Looper.getMainLooper());
 	@NonNull private final Handler zombieDetector = new Handler(Looper.getMainLooper());
 	@NonNull private final Handler heartbeatDetector = new Handler(Looper.getMainLooper());
+	@NonNull private final Runnable heartbeat = this::startHeartbeatCheck;
 	private boolean isDead = false;
 	private int zombieChecks = 0;
 
@@ -263,20 +264,21 @@ public class TraditionalT9 extends PremiumHandler {
 	 * different IME. Here we attempt to detect if we are disabled, then hide and kill ourselves.
 	 */
 	private void startHeartbeatCheck() {
+		heartbeatDetector.removeCallbacks(heartbeat); // keep a single chain, no matter how many times we start
 		if (!SystemSettings.isTT9Selected(this)) {
 			onZombie();
 		} else if (!isDead && !InputModeKind.isPassthrough(mInputMode)) {
-			heartbeatDetector.postDelayed(this::startHeartbeatCheck, SettingsStore.ZOMBIE_HEARTBEAT_INTERVAL);
+			heartbeatDetector.postDelayed(heartbeat, SettingsStore.ZOMBIE_HEARTBEAT_INTERVAL);
 			Logger.v(LOG_TAG, "===> Heart is beating");
 		}
 	}
 
 
 	private void stopHeartbeatCheck() {
-		if (!DeviceInfo.AT_LEAST_ANDROID_10 || heartbeatDetector.hasCallbacks(this::startHeartbeatCheck)) {
-			heartbeatDetector.removeCallbacksAndMessages(null);
+		if (!DeviceInfo.AT_LEAST_ANDROID_10 || heartbeatDetector.hasCallbacks(heartbeat)) {
 			Logger.d(LOG_TAG, "===> Heartbeat check stopped");
 		}
+		heartbeatDetector.removeCallbacks(heartbeat);
 	}
 
 
@@ -357,8 +359,9 @@ public class TraditionalT9 extends PremiumHandler {
 
 	@Override
 	protected boolean onNumber(int key, boolean hold, int repeat) {
-		if (InputModeKind.isPredictive(mInputMode) && DictionaryLoader.autoLoad(this, settings, mLanguage)) {
-			return true;
+		// A background dictionary check or import must never swallow the key press.
+		if (InputModeKind.isPredictive(mInputMode)) {
+			DictionaryLoader.autoLoad(this, settings, mLanguage);
 		}
 		return super.onNumber(key, hold, repeat);
 	}

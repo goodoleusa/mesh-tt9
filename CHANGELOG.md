@@ -31,6 +31,10 @@ repo is `v61.0` — the 62.x builds distributed to MegaLife devices were never t
   that filled the whole 256 MB heap available to the keyboard — so users hit
   `OutOfMemoryError`, frozen input and "keyboard is not responding" dialogs. English
   and Yiddish are unaffected by the cap; both are smaller than it.
+- A dictionary that fails to load is no longer re-imported on every key press. Automatic retries now wait 20 minutes, doubling after every failure up to once every 24 hours. Cancelling a load does not count as a failure. Loading the dictionary manually from Settings still works at any time and resets the wait.
+- The first key press after TT9 checks for a dictionary update is no longer swallowed.
+- TT9 no longer keeps checking every 2 seconds whether it is still the selected keyboard after you leave a text field. Previously these checks piled up with every text field opened and drained the battery.
+- Fixed a rare crash, or a dictionary loading twice, when TT9 checks for a missing dictionary right after install and you start typing at the same moment.
 
 ### Added
 - Release builds are platform-signed against the MegaLife shared platform key.

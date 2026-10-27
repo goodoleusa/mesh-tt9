@@ -74,6 +74,47 @@ So make sure to read the initial setup and the hotkey tips in the [user manual](
 
 _The user manual is also available in: [Brazilian Portuguese](docs/help/help.pt.md), [German](docs/help/help.de.md), [French](docs/help/help.fr.md), [Italian](docs/help/help.it.md), [Russian](docs/help/help.ru.md), [Spanish](docs/help/help.es.md), [Turkish](docs/help/help.tr.md), [Ukrainian](docs/help/help.uk.md)._
 
+## 🧩 mesh-tt9: the keyboard as a library
+
+This fork (mesh-tt9) adds an `:ime-lib` Android library module, so another app can ship the TT9 keyboard **inside its own APK** instead of asking users to install a second app. The library compiles the same sources as the TT9 app (`ime-lib/build.gradle` points its source sets at `app/src`; nothing is copied), so upstream fixes merge in once and reach every host.
+
+### How Revenant uses it
+Revenant Lite, the flip-phone build of Revenant, bundles the keyboard as a system input method (operator ruling 2026-10-27):
+- **Finding the module.** Revenant's `settings.gradle` looks for `mesh-tt9` at `-Pmesh.tt9.dir=<path>`, then `../mesh-tt9` beside the Revenant checkout, then `build/mesh-tt9`, and includes `:ime-lib` from the first one that has `ime-lib/build.gradle`.
+- **Depending on it.** `build.gradle` adds `revenantLiteImplementation project(':ime-lib')`. Building the Lite flavor with no mesh-tt9 checkout fails loudly and says where to clone it.
+- **Declaring the service.** `src/revenantLite/AndroidManifest.xml` declares `io.github.sspanak.tt9.ime.TraditionalT9` as an input method (`BIND_INPUT_METHOD`, `android.view.im` → `@xml/method`) and `PreferencesActivity` for its settings. The library leaves label, icon and theme to the host, so no `tools:replace` is needed.
+- **CI.** Revenant's `e-release.yml` checks this repo out to `build/mesh-tt9` at `vars.MESH_TT9_REF` (a second checkout pinned by ref, not a vendored copy) with full history, because TT9 derives its version code from git.
+
+### Using it in another project
+1. **Put this repo beside yours** (or anywhere, and pass `-Pmesh.tt9.dir=/path/to/mesh-tt9`). Keep full git history: the version code is derived from it.
+2. **Include the module** in your `settings.gradle`:
+   ```groovy
+   include ':ime-lib'
+   project(':ime-lib').projectDir = new File(rootDir, '../mesh-tt9/ime-lib')
+   ```
+3. **Depend on it** from your app (or one flavor): `implementation project(':ime-lib')`. Your `minSdk` must be at least 24.
+4. **Declare the input method and its settings screen** in your app's manifest:
+   ```xml
+   <service android:name="io.github.sspanak.tt9.ime.TraditionalT9"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_INPUT_METHOD"
+            android:exported="true">
+     <intent-filter><action android:name="android.view.InputMethod" /></intent-filter>
+     <meta-data android:name="android.view.im" android:resource="@xml/method" />
+   </service>
+   <activity android:name="io.github.sspanak.tt9.preferences.PreferencesActivity" android:exported="true" />
+   ```
+5. **Pick bundled dictionaries** with `-Ptt9.bundledDictionaries=en,de` (default: none; every other language downloads on demand from the keyboard's settings).
+6. **Build options.** Where SDK 37 isn't installed, build with `-Ptt9CompileSdk=35 -Ptt9TargetSdk=35`. The module uses plain, long-stable Gradle DSL so it works with your Android Gradle Plugin too (Revenant uses 8.9.3).
+7. **Enable it on the phone.** Settings → System → Languages & input → On-screen keyboard, turn on the keyboard, then choose it as the input method. On many flip phones it is easiest over adb:
+   ```
+   adb shell ime list -s
+   adb shell ime enable <your.app.id>/io.github.sspanak.tt9.ime.TraditionalT9
+   adb shell ime set <your.app.id>/io.github.sspanak.tt9.ime.TraditionalT9
+   ```
+
+Your app owns the application id, version, signing and launcher; the library owns only the keyboard. TT9's Apache-2.0 notice (`LICENSE.txt`) travels with the library sources and must ship with your app. `tests/test_ime_lib.py` checks the module stays includable by a host.
+
 ## ⌨ Contributing
 As with many other open-source projects, this one is also maintained by its author in his free time. Any help in making Traditional T9 better will be highly appreciated. Here is how:
 - Add [a new language](CONTRIBUTING.md#adding-a-new-language), [new UI translations](CONTRIBUTING.md#translating-the-ui) or simply fix a spelling mistake. The process is very simple and even with minimum technical knowledge, your skills as a native speaker will be of great use. Or, if you are not tech-savvy, just [open a new issue](https://github.com/sspanak/tt9/issues) and put the correct translations or words there. Correcting misspelled words or adding new ones is the best you can do to help. Processing millions of words in multiple languages is a very difficult task for a single person.

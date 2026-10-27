@@ -130,13 +130,13 @@ def getVersionString = { flavor -> return flavor == 'debug' ? getDebugVersion() 
 
 android {
 	namespace = PACKAGE_NAME
-	compileSdk = 37
+	compileSdk = (project.findProperty('tt9CompileSdk') ?: 37) as int   // mesh-tt9: -Ptt9CompileSdk=35 builds where SDK 37 is unavailable
 
 	defaultConfig {
 		applicationId = PACKAGE_NAME
 		buildFeatures.buildConfig = true
 		minSdk = 24
-		targetSdk = 37
+		targetSdk = (project.findProperty('tt9TargetSdk') ?: 37) as int
 		versionCode = getVerCode()
 		versionName = getVerName()
 

@@ -67,6 +67,25 @@ Use one of the tested phones:
 - Energizer H620SEU (Android 10)
 - Sonim XP3800 (Android 8.1)
 
+## What you get
+
+Everything below works with the keypad alone, no touchscreen needed. Each feature links to its section in the [user manual](docs/help/help.en.md).
+
+| Feature | How to reach it | What it does |
+|---|---|---|
+| [Copy, cut and paste](docs/help/help.en.md#clipboard-tools) | Clipboard Tools key, or hold ✱ then 5 | Select text with the D-pad, then cut, copy or paste it, like a computer keyboard |
+| [Undo and redo](docs/help/help.en.md#undo-key) | hold ✱ then 4 (undo) or 6 (redo) | Take back or replay the last edit |
+| [Command palette](docs/help/help.en.md#command-list-key--aka-command-palette--default-hold-) | hold ✱ | Every function on a two- or three-button phone, by number |
+| [Predictive typing](docs/help/help.en.md#enabling-predictive-mode) | press # to switch mode | One press per letter; next-word suggestions learn from what you type |
+| [Your own words](docs/help/help.en.md#added-words) | hold ✱ then 1 (add) or 2 (edit) | Add and edit words the dictionary lacks |
+| [Voice input](docs/help/help.en.md#voice-input) | hold ✱ then 3 | Dictate instead of typing, with or without Google services |
+| [Many languages](docs/help/help.en.md#language-options) | hold # | Switch language; dictionaries download on demand |
+| [Emoji](docs/help/help.en.md#show-emojis-key) | press 1 repeatedly in Predictive mode | Emoji and symbols from the keypad |
+| [Your own hotkeys](docs/help/help.en.md#physical-hotkeys) | Settings, Keypad, Select Hotkeys | Re-map or turn off any key |
+| [On-screen keypad](docs/help/help.en.md#on-screen-keypad) | Settings, Appearance | Retro or modern layout for touchscreen phones, resizable while typing |
+
+This fork also fixes battery drain and dictionary-reload loops (see [CHANGELOG](CHANGELOG.md)) and ships the keyboard as a library other apps can bundle (below).
+
 ## How to Use Traditional T9?
 Before using Traditional T9 for the first time you need to configure it and load a dictionary. After that, you can start typing right away in one of the three modes: Predictive, ABC, or Numeric (123). And even if you have mastered the keypad back in the day, you will still find the Predictive mode now offers more powerful and smart new ways of typing with even fewer key presses.
 

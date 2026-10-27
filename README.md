@@ -80,9 +80,12 @@ Everything below works with the keypad alone, no touchscreen needed. Each featur
 | [Your own words](docs/help/help.en.md#added-words) | hold ✱ then 1 (add) or 2 (edit) | Add and edit words the dictionary lacks |
 | [Voice input](docs/help/help.en.md#voice-input) | hold ✱ then 3 | Dictate instead of typing, with or without Google services |
 | [Many languages](docs/help/help.en.md#language-options) | hold # | Switch language; dictionaries download on demand |
+| [Custom text keys](docs/help/help.en.md#custom-text-keys--and-) | Settings, Keypad, Key Functions | The "!" and "?" keys insert a character you choose, with swipe actions (on-screen keypad) |
 | [Emoji](docs/help/help.en.md#show-emojis-key) | press 1 repeatedly in Predictive mode | Emoji and symbols from the keypad |
 | [Your own hotkeys](docs/help/help.en.md#physical-hotkeys) | Settings, Keypad, Select Hotkeys | Re-map or turn off any key |
 | [On-screen keypad](docs/help/help.en.md#on-screen-keypad) | Settings, Appearance | Retro or modern layout for touchscreen phones, resizable while typing |
+
+**No install? Use it in the browser.** Revenant's browser flip client (`reckon-lite/revenant/ui/flip/` in Revenant) carries a web T9 built from this repo's word list, plus a copy/paste ring of your last 20 clips that syncs across your devices. It works inside Revenant's own pages only; a browser page cannot type into other sites.
 
 This fork also fixes battery drain and dictionary-reload loops (see [CHANGELOG](CHANGELOG.md)) and ships the keyboard as a library other apps can bundle (below).
 

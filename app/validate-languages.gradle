@@ -1,4 +1,4 @@
-apply from: 'dictionary-tools.gradle'
+apply from: "${TT9_ROOT}/app/dictionary-tools.gradle"
 
 
 ext.validateLanguageFiles = { definitionsDir, dictionariesDir, validationDir, iconsDir, ngramsDir ->

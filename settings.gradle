@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "tt9"
 include ':app'
+include ':ime-lib'   // the keyboard as a library: also consumed by Revenant Lite (see ime-lib/build.gradle)

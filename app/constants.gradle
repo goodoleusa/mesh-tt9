@@ -1,3 +1,7 @@
+// The mesh-tt9 checkout root, derived from the including module (app/ or ime-lib/), never from
+// rootDir: Revenant Lite includes :ime-lib from outside its own tree, where rootDir is Revenant's.
+ext.TT9_ROOT = project.projectDir.parentFile.absolutePath
+
 ext.APP_NAME = 'tt9'
 ext.PACKAGE_NAME = "io.github.sspanak.${APP_NAME}"
 
@@ -8,17 +12,17 @@ ext.DICTIONARIES_DOWNLOAD_DIR_NAME = 'downloads'
 ext.DICTIONARY_SIZES_DIR_NAME = 'dictionary-sizes'
 ext.NGRAMS_DIR_NAME = 'ngrams'
 
-def APP_ROOT_DIR = "${project.rootDir}/app"
+def APP_ROOT_DIR = "${TT9_ROOT}/app"
 ext.ICONS_DIR = "${APP_ROOT_DIR}/src/main/res/drawable"
 ext.ICONS_JAVA_FILE = "${APP_ROOT_DIR}/src/main/java/${PACKAGE_NAME.replaceAll("\\.", "/")}/ui/StatusIcon.java"
 def MAIN_ASSETS_DIR = "${APP_ROOT_DIR}/src/main/assets"
 def FULL_VERSION_ASSETS_DIR = "${APP_ROOT_DIR}/src/full/assets"
 
-ext.FUNDING_FILE = "${project.rootDir}/.github/FUNDING.yml"
+ext.FUNDING_FILE = "${TT9_ROOT}/.github/FUNDING.yml"
 
 ext.DOCS_DIR_NAME = "docs"
-ext.HELP_MARKDOWN_DIR = "${project.rootDir}/${DOCS_DIR_NAME}/help"
-ext.PRIVACY_POLICY_MARKDOWN = "${project.rootDir}/${DOCS_DIR_NAME}/privacy.md"
+ext.HELP_MARKDOWN_DIR = "${TT9_ROOT}/${DOCS_DIR_NAME}/help"
+ext.PRIVACY_POLICY_MARKDOWN = "${TT9_ROOT}/${DOCS_DIR_NAME}/privacy.md"
 ext.DOCS_HTML_DIR = "${MAIN_ASSETS_DIR}/${DOCS_DIR_NAME}"
 
 ext.LANGUAGES_INPUT_DIR = "${APP_ROOT_DIR}/${LANGUAGES_DIR_NAME}"
@@ -26,7 +30,7 @@ ext.DEFINITIONS_INPUT_DIR = "${LANGUAGES_INPUT_DIR}/${DEFINITIONS_DIR_NAME}"
 ext.DICTIONARIES_INPUT_DIR = "${LANGUAGES_INPUT_DIR}/${DICTIONARIES_DIR_NAME}"
 ext.NGRAMS_INPUT_DIR = "${LANGUAGES_INPUT_DIR}/${NGRAMS_DIR_NAME}"
 
-ext.DICTIONARIES_DOWNLOAD_DIR = "${project.rootDir}/${DICTIONARIES_DOWNLOAD_DIR_NAME}"
+ext.DICTIONARIES_DOWNLOAD_DIR = "${TT9_ROOT}/${DICTIONARIES_DOWNLOAD_DIR_NAME}"
 
 ext.LANGUAGES_OUTPUT_DIR = "${MAIN_ASSETS_DIR}/${LANGUAGES_DIR_NAME}"
 ext.DEFINITIONS_OUTPUT_FILE = "${LANGUAGES_OUTPUT_DIR}/${DEFINITIONS_DIR_NAME}.yml"

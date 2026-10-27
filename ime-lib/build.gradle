@@ -1,0 +1,258 @@
+// Traditional T9 fork, Apache-2.0 (see LICENSE.txt at the repo root; the notice travels with the library sources).
+// :ime-lib — the TT9 keyboard (InputMethodService, settings screens, dictionary loader) as an Android library.
+//
+// The sources are NOT copied: the source sets below point at the existing app/src tree, so the TT9 app and any
+// other host (Revenant Lite includes this module from ../mesh-tt9) compile the very same files. The host owns
+// the application identity, version, signing and launcher. Build tooling lives in app/*.gradle, shared by path.
+//
+// Must stay valid for both the AGP this repo pins (root build.gradle) and the AGP of a host that includes it
+// (Revenant: 8.9.3), hence the plain, long-stable DSL below.
+plugins {
+	id 'com.android.library'
+}
+
+apply from: "${projectDir.parentFile.absolutePath}/app/constants.gradle"
+apply from: "${TT9_ROOT}/app/build-definitions.gradle"
+apply from: "${TT9_ROOT}/app/build-dictionaries.gradle"
+apply from: "${TT9_ROOT}/app/build-ngrams.gradle"
+apply from: "${TT9_ROOT}/app/validate-languages.gradle"
+apply from: "${TT9_ROOT}/app/help-tools.gradle"
+apply from: "${TT9_ROOT}/app/status-icon-tools.gradle"
+apply from: "${TT9_ROOT}/app/version-tools.gradle"
+
+// A host picks the dictionaries shipped inside the APK with -Ptt9.bundledDictionaries=en,... (default: none, the
+// upstream behaviour of the lite flavor). Every other language is fetched on demand by the existing downloader.
+ext.BUNDLED_DICTIONARIES = (project.findProperty('tt9.bundledDictionaries') ?: '').toString().split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+ext.BUNDLED_DICTIONARIES_DIR = layout.buildDirectory.dir('generated/tt9-bundled-dictionaries')
+
+tasks.register('validateLanguages') {
+	inputs.dir LANGUAGES_INPUT_DIR
+	outputs.dir LANGUAGE_VALIDATION_DIR
+
+	doLast {
+		validateLanguageFiles(DEFINITIONS_INPUT_DIR, DICTIONARIES_INPUT_DIR, LANGUAGE_VALIDATION_DIR.get().asFile, ICONS_DIR, NGRAMS_INPUT_DIR)
+	}
+}
+
+
+tasks.register('buildDefinition') {
+	inputs.dir DEFINITIONS_INPUT_DIR
+	outputs.file DEFINITIONS_OUTPUT_FILE
+
+	doLast {
+		mergeDefinitions(DEFINITIONS_INPUT_DIR, DEFINITIONS_OUTPUT_FILE)
+	}
+}
+
+
+tasks.register('buildDictionaryDownloads') {
+	inputs.dir LANGUAGES_INPUT_DIR
+	outputs.dir DICTIONARY_META_OUTPUT_DIR
+	outputs.files(fileTree(DICTIONARIES_DOWNLOAD_DIR) { include '**/*.zip'; exclude '**/*ngrams.zip' })
+
+	dependsOn validateLanguages
+	mustRunAfter validateLanguages
+
+	doLast {
+		convertDictionaries(DEFINITIONS_INPUT_DIR, DICTIONARIES_INPUT_DIR, DICTIONARIES_DOWNLOAD_DIR, DICTIONARY_META_OUTPUT_DIR, ICONS_DIR, NGRAMS_INPUT_DIR)
+	}
+}
+
+
+tasks.register('copyDownloadsToAssets', Copy) {
+	from DICTIONARIES_DOWNLOAD_DIR
+	include '**/*.zip'
+	exclude '**/*ngrams.zip'
+	into DICTIONARIES_OUTPUT_DIR
+	dependsOn buildDictionaryDownloads
+	mustRunAfter buildDictionaryDownloads
+}
+
+
+tasks.register('generateNgramsMeta') {
+	inputs.dir NGRAMS_INPUT_DIR
+	outputs.dir NGRAMS_META_OUTPUT_DIR
+
+	dependsOn validateLanguages
+	mustRunAfter validateLanguages
+
+	doLast {
+		generateNgramsMetadata(DEFINITIONS_INPUT_DIR, DICTIONARIES_INPUT_DIR, ICONS_DIR, NGRAMS_INPUT_DIR, NGRAMS_META_OUTPUT_DIR)
+	}
+}
+
+
+tasks.register('copyNgramsToAssets', Copy) {
+	from NGRAMS_INPUT_DIR
+	include '**/*ngrams.zip'
+	into NGRAMS_OUTPUT_DIR
+	dependsOn generateNgramsMeta
+	mustRunAfter generateNgramsMeta
+}
+
+
+tasks.register('copyNgramsToDownloads', Copy) {
+	from NGRAMS_INPUT_DIR
+	include '**/*ngrams.zip'
+	into DICTIONARIES_DOWNLOAD_DIR
+	dependsOn generateNgramsMeta
+	mustRunAfter generateNgramsMeta, copyDownloadsToAssets
+}
+
+
+tasks.register('generateDocs') {
+	inputs.dir HELP_MARKDOWN_DIR
+	inputs.file PRIVACY_POLICY_MARKDOWN
+	outputs.dir DOCS_HTML_DIR
+
+	doLast {
+		convertDocs(HELP_MARKDOWN_DIR, PRIVACY_POLICY_MARKDOWN, DOCS_HTML_DIR)
+	}
+}
+
+tasks.register('updateStatusIcons') {
+	doLast {
+		updateStatusIconCache(DEFINITIONS_INPUT_DIR, ICONS_DIR, ICONS_JAVA_FILE)
+	}
+}
+
+clean {
+	delete DOCS_HTML_DIR
+	delete DICTIONARIES_OUTPUT_DIR
+	delete DICTIONARIES_DOWNLOAD_DIR
+	delete LANGUAGES_OUTPUT_DIR
+	delete NGRAMS_OUTPUT_DIR
+}
+
+
+tasks.register('copyBundledDictionaries', Copy) {
+	// the English (or whatever -Ptt9.bundledDictionaries names) dictionary zip, for hosts that ship it in the APK
+	from(DICTIONARIES_DOWNLOAD_DIR) {
+		BUNDLED_DICTIONARIES.each { include "${it}-*.zip" }
+		if (BUNDLED_DICTIONARIES.isEmpty()) {
+			exclude '**'   // an empty include list means "everything"; bundle nothing instead
+		}
+		exclude '**/*ngrams.zip'
+	}
+	into BUNDLED_DICTIONARIES_DIR.map { "${it.asFile}/${LANGUAGES_DIR_NAME}/${DICTIONARIES_DIR_NAME}" }
+	dependsOn buildDictionaryDownloads
+	mustRunAfter buildDictionaryDownloads
+}
+
+// using the exported Closures directly causes weird values, hence the extra wrappers here
+def getDonationUrl = { -> new File(FUNDING_FILE)
+		.readLines().get(0).trim()
+		.replaceFirst("^([^:]+)\\s*:\\s*([^\\n]+)", "https://\$1.com/\$2")
+		.replace('_', '-')
+}
+def getVerCode = { -> return getVersionCode() }
+def getVerName = { -> return getVersionName() }
+def getVersionString = { flavor -> return flavor == 'debug' ? getDebugVersion() : getReleaseVersion() }
+
+
+android {
+	namespace = PACKAGE_NAME
+	compileSdk = (project.findProperty('tt9CompileSdk') ?: 37) as int   // mesh-tt9: -Ptt9CompileSdk=35 builds where SDK 37 is unavailable
+
+	defaultConfig {
+		minSdk = 24
+
+		// BuildConfig of a library does not carry VERSION_CODE; the code reads it (DB version, first-install check)
+		buildConfigField 'int', 'VERSION_CODE', "${getVerCode()}"
+		buildConfigField 'String', 'DICTIONARY_EXTENSION', "\"${DICTIONARY_OUTPUT_EXTENSION}\""
+		buildConfigField 'String', 'DOCS_DIR', "\"${DOCS_DIR_NAME}\""
+		buildConfigField 'String', 'DONATION_URL', "\"${getDonationUrl()}\""
+
+		consumerProguardFiles "${TT9_ROOT}/app/proguard-rules.pro"
+		vectorDrawables.generatedDensities = []
+	}
+
+	buildFeatures {
+		buildConfig = true
+	}
+
+	buildTypes {
+		debug {
+			buildConfigField 'String', 'VERSION_FULL', "\"${getVersionString('debug')}\""
+		}
+		release {
+			// shrinking is the host's job; the rules above travel with the library
+			buildConfigField 'String', 'VERSION_FULL', "\"${getVersionString('release')}\""
+		}
+	}
+
+	compileOptions {
+		sourceCompatibility JavaVersion.VERSION_17
+		targetCompatibility JavaVersion.VERSION_17
+	}
+
+	flavorDimensions = ['app']
+	productFlavors {
+		full {
+			dimension 'app'
+			buildConfigField 'Boolean', 'LITE', 'false'
+			buildConfigField 'Boolean', 'PREMIUM', 'false'
+		}
+		lite {
+			dimension 'app'
+			buildConfigField 'Boolean', 'LITE', 'true'
+			buildConfigField 'Boolean', 'PREMIUM', 'false'
+		}
+		premium {
+			dimension 'app'
+			buildConfigField 'Boolean', 'LITE', 'true'
+			buildConfigField 'Boolean', 'PREMIUM', 'true'
+		}
+	}
+
+	// the existing tree: app/src/{main,full,lite,premium}/{java,res,assets,AndroidManifest.xml}
+	sourceSets {
+		['main', 'full', 'lite', 'premium'].each { n ->
+			maybeCreate(n).with {
+				java.srcDirs = ["../app/src/${n}/java"]
+				res.srcDirs = ["../app/src/${n}/res"]
+				assets.srcDirs = ["../app/src/${n}/assets"]
+				manifest.srcFile "../app/src/${n}/AndroidManifest.xml"
+			}
+		}
+		// bundled dictionaries (none unless the host asks) ride along with the lite flavor as extra assets
+		lite.assets.srcDir BUNDLED_DICTIONARIES_DIR
+	}
+
+	androidComponents {
+		onVariants(selector().all()) { variant ->
+			def variantName = variant.name.capitalize()
+
+			tasks.matching { it.name == "javaPreCompile${variantName}" }.configureEach {
+				dependsOn(updateStatusIcons)
+			}
+
+			[
+				"merge${variantName}Assets",
+				"lintAnalyze${variantName}",
+				"generate${variantName}LintReportModel",
+				"lintVitalAnalyze${variantName}",
+				"generate${variantName}LintVitalReportModel"
+			].each { taskName ->
+				tasks.matching { it.name == taskName }.configureEach {
+					dependsOn(buildDefinition, generateDocs, validateLanguages, buildDictionaryDownloads, copyNgramsToAssets, copyNgramsToDownloads)
+
+					if (taskName.toLowerCase().contains("full")) {
+						dependsOn(copyDownloadsToAssets)
+					}
+					if (taskName.startsWith("merge") && variant.flavorName == 'lite') {
+						dependsOn(copyBundledDictionaries)
+					}
+				}
+			}
+		}
+	}
+}
+
+dependencies {
+	implementation 'androidx.preference:preference:1.2.1'
+	implementation "androidx.window:window:1.5.1"
+	implementation "androidx.window:window-java:1.5.1"
+	implementation 'com.google.android.material:material:1.14.0'
+	premiumImplementation 'com.android.billingclient:billing:9.0.0'
+}

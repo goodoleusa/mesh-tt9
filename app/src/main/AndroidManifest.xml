@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+	The IME library manifest (module :ime-lib; namespace io.github.sspanak.tt9). It holds everything the keyboard
+	needs wherever it is hosted: the InputMethodService, its settings screens, the permissions. The host owns the
+	<application> identity (icon, label, theme), the version and the launcher: TT9 in app/src/app/AndroidManifest.xml,
+	Revenant Lite in its own src/revenantLite/AndroidManifest.xml.
+-->
 <manifest xmlns:tools="http://schemas.android.com/tools"
-	android:versionCode="1596"
-	android:versionName="62.0"
 	xmlns:android="http://schemas.android.com/apk/res/android">
 
 	<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/> <!-- allows displaying notifications on Android >= 13 -->
@@ -14,13 +18,7 @@
 		</intent>
 	</queries>
 
-	<application
-		android:enableOnBackInvokedCallback="true"
-		android:icon="@mipmap/ic_launcher"
-		android:roundIcon="@mipmap/ic_launcher_round"
-		android:label="@string/app_name"
-		android:theme="@style/TTheme"
-		android:supportsRtl="true">
+	<application>
 
 		<service android:name="io.github.sspanak.tt9.ime.TraditionalT9" android:permission="android.permission.BIND_INPUT_METHOD"
 			android:exported="true">
@@ -40,12 +38,7 @@
 			android:label="@string/app_name_short"
 			android:name="io.github.sspanak.tt9.preferences.PreferencesActivity"
 			android:exported="true"
-			android:theme="@style/TTheme.Preferences">
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN"/>
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
-		</activity>
+			android:theme="@style/TTheme.Preferences" />
 
 		<activity
 			android:excludeFromRecents="true"

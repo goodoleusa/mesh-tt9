@@ -1,12 +1,13 @@
-static def execThing (String cmd) {
-	return cmd.execute().text.trim()
+// git runs in the mesh-tt9 checkout, not the invoking directory (Revenant Lite builds from its own tree)
+def execThing (String cmd) {
+	return cmd.execute(null, new File(TT9_ROOT)).text.trim()
 }
 
-static def getCurrentGitHash() {
+def getCurrentGitHash() {
 	return execThing('git rev-parse --short=8 HEAD')
 }
 
-static def generateVersionName() {
+def generateVersionName() {
 	// major version
 	String versionTagsRaw = execThing('git tag --list v[0-9]*')
 	int versionTagsCount = versionTagsRaw == "" ? 0 : versionTagsRaw.split('\n').size()
@@ -52,7 +53,7 @@ ext.getReleaseVersion = { ->
 }
 
 ext.updateManifestVersion = { versionCode, versionName ->
-	def manifestFile = file("src/main/AndroidManifest.xml")
+	def manifestFile = new File(TT9_ROOT, "app/src/app/AndroidManifest.xml")
 
 	def newManifest = manifestFile
 		.getText()
